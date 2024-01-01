@@ -48,41 +48,9 @@ void json_spool_put(char ch);                             // Put something into 
 /*
  *  Port Definitions
  */
-#define D0          37                     //  Byte Port bit locations
-#define D1          36                     //
-#define D2          35                     //
-#define D3          34                     //
-#define D4          33                     //
-#define D5          32                     //
-#define D6          31                     //
-#define D7          30                     //
 
-#define NORTH_HI    50                    // Address port but locations
-#define NORTH_LO    51
-#define EAST_HI     48
-#define EAST_LO     49
-#define SOUTH_HI    43                    // Address port but locations
-#define SOUTH_LO    47
-#define WEST_HI     41
-#define WEST_LO     42
 
-#define RUN_LSB      3
-#define RUN_NORTH   25                    // PA3
-#define RUN_N_MASK  (1<<3)
-#define RUN_EAST    26                    // PA4
-#define RUN_E_MASK  (1<<4)
-#define RUN_SOUTH   27                    // PA5
-#define RUN_S_MASK  (1<<5)
-#define RUN_WEST    28                    // PA6
-#define RUN_W_MASK  (1<<6)
-#define RUN_A_MASK  (RUN_N_MASK + RUN_E_MASK + RUN_S_MASK + RUN_W_MASK)
 #define RUN_PORT    PINA
-
-#define QUIET       29
-#define RCLK        40
-#define CLR_N       39
-#define STOP_N      52       
-#define CLOCK_START 53
 
 #define DIP_0        9
 #define RED_OUT      9                  // Rapid fire RED on DIP0
@@ -134,6 +102,11 @@ void json_spool_put(char ch);                             // Put something into 
 #define TRIP_EAST    0x02
 #define TRIP_SOUTH   0x04
 #define TRIP_WEST    0x08
+#define TIMER_NORTH  1
+#define TIMER_EAST   3
+#define TIMER_SOUTH  4
+#define TIMER_WEST   5
+
 
 #define PAPER        18                    // Paper advance drive active low (TX1)
 #define PAPER_ON      0

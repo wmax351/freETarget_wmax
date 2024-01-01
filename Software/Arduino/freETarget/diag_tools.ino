@@ -142,11 +142,11 @@ void self_test(uint16_t test)
         }
       }
   
-      while ( !is_running() )
+      while ( is_running() == B00001111 )
       {
         continue;
       }
-      sensor_status = is_running();       // Remember all of the running timers
+      sensor_status = is_running();       // Remember all of the running timers ToDo: IsRunning might be wrong in all the functions
       stop_timers();
       read_timers(&shot.timer_count[0]);
 
@@ -234,12 +234,6 @@ void self_test(uint16_t test)
       }
       break;
 
-/*
- * Test 11
- */
-    case T_SET_TRIP:
-      set_trip_point(0);          // Stay in the trip point loop
-      break;
 
 /*
  * Test 13
@@ -693,42 +687,8 @@ void self_test(uint16_t test)
   return test_passed;
 }
   
-/*----------------------------------------------------------------
- * 
- * function: void POST_trip_point()
- * 
- * brief: Display the trip point
- * 
- * return: None
- *----------------------------------------------------------------
- *
- *  Run the set_trip_point function once
- *  
- *--------------------------------------------------------------*/
- void POST_trip_point(void)
- {
-   if ( DLT(DLT_APPLICATION) )
-   {
-    Serial.print(T("POST trip point"));
-   }
-   
-   set_trip_point(20);              // Show the trip point once (20 cycles used for blinking values)
-   set_LED(LED_RESET);               // Show test test Ending
-   return;
- }
- 
-/*----------------------------------------------------------------
- * 
- * function: set_trip_point
- * 
- * brief: Read the pot and display the voltage on the LEDs as a grey code
- * 
- * return: Potentiometer set for the desired trip point
- *----------------------------------------------------------------
- *
- * The various running registers and displayshot_mm them for use
- *  
- *--------------------------------------------------------------*/
+
+
 #define CT(x) (1023l * (long)(x+25) / 5000l )   // 1/16 volt = 12.8 counts
 #define SPEC_RANGE   50            // Out of spec if within 50 couts of the rail
 #define BLINK        0x80
@@ -747,107 +707,6 @@ static void start_over(void)    // Start the test over again
   return;
 }
 
-void set_trip_point
-  (
-  int pass_count                                            // Number of passes to allow before exiting (0==infinite)
-  )
-{
-  bool          stay_forever;                               // Stay forever if called with pass_count == 0;
-  unsigned int  sensor_status;                              // OR of the sensor bits that have tripped
-  bool          pause;                                      // Stop the test
-  unsigned int  i, j;                                       // Iteration Counter
-  
-  Serial.print(T("Setting trip point. Type ! of cycle power to exit\r\n"));
-
-  sensor_status = 0;                                        // No sensors have tripped
-  stay_forever = false;
-  if (pass_count == 0 )                                     // A pass count of 0 means stay
-  {
-    stay_forever = true;                                    // For a long time
-  }
-  arm_timers();                                             // Arm the flip flops for later
-  enable_face_interrupt();                                  // Arm the face sensor
-  disable_timer_interrupt();                                // Prevent the timer from overwriting
-  face_strike = 0;
-
-/*
- * Set the PWM at 50%
- */
-  json_vset_PWM = 128;
-  set_vset_PWM(json_vset_PWM);
-  EEPROM.put(NONVOL_vset_PWM, json_vset_PWM);
-
-/*
- * Loop if not in spec, passes to display, or the CAL jumper is in
- */
-  while ( ( stay_forever )                                  // Passes to go
-          ||   ( CALIBRATE )                                // Held in place by DIP switch
-          ||   (pass_count != 0))                           // Wait here for N cycles
-  {
-/*
- * Got to the end.  See if we are going to do this for a fixed time or forever
- */
-    switch (Serial.read())
-    {
-      case '!':                       // ! waiting in the serial port
-        Serial.print(T("\r\nExiting calibration\r\n"));
-        return;
-
-      case 'B':
-      case 'b':                       // Blink the Motor Drive
-        Serial.print(T("\r\nBlink Motor Drive\r\n"));
-        paper_on_off(1);
-        delay(ONE_SECOND);
-        paper_on_off(0);
-        break;
-      
-      case 'W':
-      case 'w':                      // Test the WiFI
-        Serial.print(T("\r\nTest WiFi"));
-        esp01_test();
-        break;
-        
-      case 'R':
-      case 'r':                       // Reset Cancel
-      case 'X':
-      case 'x':                       // X Cancel
-        start_over();
-        break;
-        
-      default:
-        break;
-    }
-    
-
-   show_sensor_status(is_running(), 0);
-   Serial.print(T("\n\r"));
-   if ( stay_forever )
-   {
-      if ( (is_running() == 0x0f) && (face_strike != 0) )
-      {
-        start_over();
-      }
-   }
-   else
-   {
-     if ( pass_count != 0 )             // Set for a finite loop?
-     {
-        pass_count--;                   // Decriment count remaining
-        if ( pass_count == 0 )          // And bail out when zero
-        {
-          return;
-        }
-      }
-   }
-   delay(ONE_SECOND/5);
- }
-
- /*
-  * Return
-  */
-  enable_timer_interrupt();
-  return;
-}
 
 /*----------------------------------------------------------------
  * 

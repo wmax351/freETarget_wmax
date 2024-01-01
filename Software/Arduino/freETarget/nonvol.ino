@@ -177,11 +177,6 @@ void factory_nonvol
     Serial.print(T(" Test Complete\r\n"));
   }
 /*
- * Set the trip point
- */
-  set_trip_point(0);                      // And stay forever in the set trip mode
-
-/*
  * Ask for the serial number.  Exit when you get !
  */
   if ( new_serial_number )

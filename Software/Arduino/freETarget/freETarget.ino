@@ -365,7 +365,7 @@ unsigned int arm(void)
   arm_timers();                     // Arm the counters
   
   sensor_status = is_running();     // and immediatly read the status
-  if ( sensor_status == 0 )         // After arming, the sensor status should be zero
+  if ( sensor_status == B00001111 )         // After arming, the sensor status should all still run
   { 
     if ( DLT(DLT_APPLICATION) )
     {
@@ -377,25 +377,25 @@ unsigned int arm(void)
 /*
  * The sensors are tripping, display the error
  */
-  if ( sensor_status & TRIP_EAST  )
+  if (!(sensor_status & B0000001))
   {
     Serial.print(T("\r\n{ \"Fault\": \"NORTH\" }"));
     set_LED(NORTH_FAILED);           // Fault code North
     delay(ONE_SECOND);
   }
-  if ( sensor_status & TRIP_EAST  )
+  if ((!sensor_status & B00000010))
   {
     Serial.print(T("\r\n{ \"Fault\": \"EAST\" }"));
     set_LED(EAST_FAILED);           // Fault code East
     delay(ONE_SECOND);
   }
-  if ( sensor_status & TRIP_SOUTH )
+  if (!(sensor_status & B00000100))
   {
     Serial.print(T("\r\n{ \"Fault\": \"SOUTH\" }"));
     set_LED(SOUTH_FAILED);         // Fault code South
     delay(ONE_SECOND);
   }
-  if ( sensor_status & TRIP_WEST )
+  if (!(sensor_status & B00001000))
   {
     Serial.print(T("\r\n{ \"Fault\": \"WEST\" }"));
     set_LED(WEST_FAILED);         // Fault code West
@@ -1006,7 +1006,7 @@ void bye(void)
   while( (DIP_SW_A == 0)            // Wait for the switch to be pressed
         && (DIP_SW_B == 0)          // Or the switch to be pressed
         && ( available_all() == 0)  // Or a character to arrive
-        && ( is_running() == 0) )   // Or a shot arrives
+        && ( is_running() == B00001111) )   // Or a shot arrives
   {
     esp01_receive();                // Keep polling the WiFi to see if anything 
   }                                 // turns up

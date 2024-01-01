@@ -38,8 +38,8 @@ static unsigned int isr_state = PORT_STATE_IDLE;// Current aquisition state
  *-----------------------------------------------------
  *
  * Timer 0 used to by Arduino for the millis() functions
- * Timer 1 is used by freETarget to sample the sensor inputs
- * Timer 2 is unassigned
+ * Timer 2 is used by freETarget to sample the sensor inputs
+ * Timer 1,3,4,5 are used for sensor detection
  *-----------------------------------------------------*/
 void init_timer(void)
 {
@@ -51,16 +51,16 @@ void init_timer(void)
   }
   
 /*
- * Timer 1
+ * Timer 2 (instead of 1)
  */
-  TCCR1A = 0;                           // set entire TCCR0A register to 0
-  TCCR1B = 0;                           // same for TCCR0B
-  TCNT1  = 0;                           // initialize counter value to 0
+  TCCR2A = 0;                           // set entire TCCR0A register to 0
+  TCCR2B = 0;                           // same for TCCR0B
+  TCNT2  = 0;                           // initialize counter value to 0
 
-  OCR1A = 16000000 / 64 / FREQUENCY;    // 16MHz CPU Clock / 64 Prescale / 1KHz timer interrupt
-  TCCR1A |= B00000010;                  // Enable CTC Mode
-  TCCR1B |= B00000011;                  // Prescale 64
-  TIMSK1 &= ~(B0000010);                // Make sure the interrupt is disabled
+  OCR2A = 16000000 / 64 / FREQUENCY;    // 16MHz CPU Clock / 64 Prescale / 1KHz timer interrupt
+  TCCR2A |= B00000010;                  // Enable CTC Mode
+  TCCR2B |= B00000011;                  // Prescale 64
+  TIMSK2 &= ~(B0000010);                // Make sure the interrupt is disabled
 
   for (i=0; i != N_TIMERS; i++ )        // Clear the timer callback
   {
@@ -92,7 +92,7 @@ void init_timer(void)
 
 void enable_timer_interrupt(void)
 {
-  TIMSK1 |= (B0000010);                       // Enable timer compare interrupt
+  TIMSK2 |= (B0000010);                       // Enable timer compare interrupt
   
 /*
  * All done, return
@@ -105,7 +105,7 @@ void enable_timer_interrupt(void)
 
 void disable_timer_interrupt(void)
 {
-  TIMSK1 &= ~(B0000010);                      // disable timer compare interrupt
+  TIMSK2 &= ~(B0000010);                      // disable timer compare interrupt
   
 /*
  * All done, return
@@ -113,6 +113,56 @@ void disable_timer_interrupt(void)
   return;
 }
 
+
+ /*-----------------------------------------------------
+ *
+ * Triggers when shot arrives, save value and stop timer
+ * 
+ *-----------------------------------------------------*/
+ISR(TIMER1_CAPT_vect) {
+  // stopt timer
+  TCCR1B = B00000000;
+  // transfer time into capture register
+  T[0] = ICR1;
+  if (!T_first)
+  {
+    T_first = 1;
+  }
+}
+
+ISR(TIMER3_CAPT_vect) {
+  // stopt timer
+  TCCR3B = B00000000;
+  // transfer time into capture register
+  T[1] = ICR3;
+  if (!T_first)
+  {
+    T_first = 2;
+  }
+
+}
+
+ISR(TIMER4_CAPT_vect) {
+  // stopt timer
+  TCCR4B = B00000000;
+  // transfer time into capture register
+  T[2] = ICR4;
+  if (!T_first)
+  {
+    T_first = 3;
+  }
+}
+
+ISR(TIMER5_CAPT_vect) {
+  // stopt timer
+  TCCR5B = B00000000;
+  // transfer time into capture register
+  T[3] = ICR5;
+  if (!T_first)
+  {
+    T_first = 4;
+  }
+}
 
 /*-----------------------------------------------------
  * 
@@ -145,13 +195,13 @@ void disable_timer_interrupt(void)
  * 
  *-----------------------------------------------------*/
 
-ISR(TIMER1_COMPA_vect)
+ISR(TIMER2_COMPA_vect)
 {
   unsigned int pin;                             // Value read from the port
   unsigned char ch;                             // Byte input
   unsigned int  i;                              // Iteration counter
   
-  TCNT1  = 0;                                   // Reset the counter back to 0
+  TCNT2  = 0;                                   // Reset the counter back to 0
 
 /*
  * Refresh the timers
@@ -167,16 +217,16 @@ ISR(TIMER1_COMPA_vect)
   
 /*
  * Decide what to do if based on what inputs are present
- */
-  pin = RUN_PORT & RUN_A_MASK;                 // Read in the RUN bits
-
+ */ 
+  pin = is_running();                 // Read in the RUN bits
+  //ToDo
 /*
  * Read the timer hardware based on the ISR state
  */
   switch (isr_state)
   {
     case PORT_STATE_IDLE:                       // Idle, Wait for something to show up
-      if ( pin != 0 )                           // Something has triggered
+      if ( pin != B00001111 )                           // Something has triggered, some timer have stopped
       { 
         isr_timer = (int)(json_sensor_dia / 0.30 / 1000.0) + 1; // Start the wait timer
         isr_state = PORT_STATE_WAIT;            // Got something wait for all of the sensors tro trigger
@@ -184,7 +234,7 @@ ISR(TIMER1_COMPA_vect)
       break;
           
     case PORT_STATE_WAIT:                       // Something is present, wait for all of the inputs
-      if ( (pin == RUN_A_MASK)                  // We have all of the inputs
+      if ( (pin == 0)                           // We have all of the inputs
           || (isr_timer == 0) )                 // or ran out of time.  Read the timers and restart
       {
         aquire();                               // Read the counters
@@ -195,18 +245,10 @@ ISR(TIMER1_COMPA_vect)
       break;
       
     case PORT_STATE_DONE:                       // Waiting for the ringing to stop
-      if ( pin != 0 )                           // Something got latched
+      if ( isr_timer == 0 )                   // Make sure there is no rigning
       {
-        isr_timer = json_min_ring_time;
-        clear_running();                        // Reset and try later
-      }
-      else
-      {
-        if ( isr_timer == 0 )                   // Make sure there is no rigning
-        {
-          arm_timers();                         // and arm for the next time
-          isr_state = PORT_STATE_IDLE;          // and go back to idle
-        }
+        arm_timers();                         // and arm for the next time
+        isr_state = PORT_STATE_IDLE;          // and go back to idle
       }
       break;
   }

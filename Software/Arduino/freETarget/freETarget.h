@@ -57,7 +57,7 @@
 /*
  * Oscillator Features
  */
-#define OSCILLATOR_MHZ   8.0                          // 8000 cycles in 1 ms
+#define OSCILLATOR_MHZ   16.0                          // 8000 cycles in 1 ms
 #define CLOCK_PERIOD  (1.0/OSCILLATOR_MHZ)            // Seconds per bit
 #define ONE_SECOND      1000L                         // 1000 ms delay 
 #define ONE_SECOND_US   1000000u                      // One second in us

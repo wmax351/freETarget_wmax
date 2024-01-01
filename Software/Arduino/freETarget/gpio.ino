@@ -8,39 +8,24 @@
 
 #include "timer.h"
 
-const GPIO init_table[] = {
-  {D0,          "\"D0\":",       INPUT_PULLUP, 0 },
-  {D1,          "\"D1\":",       INPUT_PULLUP, 0 },
-  {D2,          "\"D2\":",       INPUT_PULLUP, 0 },
-  {D3,          "\"D3\":",       INPUT_PULLUP, 0 },
-  {D4,          "\"D4\":",       INPUT_PULLUP, 0 },     
-  {D5,          "\"D5\":",       INPUT_PULLUP, 0 },
-  {D6,          "\"D6\":",       INPUT_PULLUP, 0 },
-
-  {NORTH_HI,    "\"N_HI\":",     OUTPUT, 1},
-  {NORTH_LO,    "\"N_LO\":",     OUTPUT, 1},
-  {EAST_HI,     "\"E_HI\":",     OUTPUT, 1},
-  {EAST_LO,     "\"E_LO\":",     OUTPUT, 1},
-  {SOUTH_HI,    "\"S_HI\":",     OUTPUT, 1},
-  {SOUTH_LO,    "\"S_LO\":",     OUTPUT, 1},
-  {WEST_HI,     "\"W_HI\":",     OUTPUT, 1},
-  {WEST_LO,     "\"W_LO\":",     OUTPUT, 1},      
-        
-  {RUN_NORTH,   "\"RUN_N\":",    INPUT_PULLUP, 0},
-  {RUN_EAST,    "\"RUN_E\":",    INPUT_PULLUP, 0},
-  {RUN_SOUTH,   "\"RUN_S\":",    INPUT_PULLUP, 0},
-  {RUN_WEST,    "\"RUN_W\":",    INPUT_PULLUP, 0},     
-
-  {QUIET,       "\"QUIET\":",    OUTPUT, 1},
-  {RCLK,        "\"RCLK\":",     OUTPUT, 1},
-  {CLR_N,       "\"CLR_N\":",    OUTPUT, 1},
-  {STOP_N,      "\"STOP_N\":",   OUTPUT, 1},
-  {CLOCK_START, "\"CLK_ST\":",   OUTPUT, 0},
+const GPIO init_table[] = {   
   
   {DIP_0,       "\"DIP_0\":",    INPUT_PULLUP, 0},
   {DIP_1,       "\"DIP_1\":",    INPUT_PULLUP, 0},
   {DIP_2,       "\"DIP_2\":",    INPUT_PULLUP, 0},
-  {DIP_3,       "\"DIP_3\":",    INPUT_PULLUP, 0},  
+  {DIP_3,       "\"DIP_3\":",    INPUT_PULLUP, 0},
+
+  {PD4,         "\"ICP_1\":",    INPUT_PULLUP, 0 }, // connected to PD7, PD6, PD5
+  {PE7,         "\"ICP_3\":",    INPUT_PULLUP, 0 }, // conencted to PE6, PE5
+  {PL0,         "\"ICP_4\":",    INPUT_PULLUP, 0 },
+  {PL1,         "\"ICP_5\":",    INPUT_PULLUP, 0 },
+
+  {PD7,         "\"ICP_1_\":",    INPUT, 0 }, // set parallel pins to high z
+  {PD6,         "\"ICP_1_\":",    INPUT, 0 },
+  {PD5,         "\"ICP_1_\":",    INPUT, 0 },
+  {PE6,         "\"ICP_3_\":",    INPUT, 0 },
+  {PE5,         "\"ICP_3_\":",    INPUT, 0 },
+    
 
   {LED_RDY,     "\"RDY\":",      OUTPUT, 1},
   {LED_X,       "\"X\":",        OUTPUT, 1},
@@ -71,6 +56,9 @@ static char aux_spool[128];               // Spooling buffer from the AUX port
 static char json_spool[64];               // Spool for JSON
 static unsigned int  aux_spool_in, aux_spool_out; // Pointer to the spool
 static unsigned int  json_spool_in, json_spool_out; // Pointer to the spool
+static uint16_t T[4];                     // safes the time values
+static uint8_t T_first;                    // stored the first timer to trigger
+
 
 /*-----------------------------------------------------
  * 
@@ -122,42 +110,6 @@ void init_gpio(void)
   return;
 }
 
-/*-----------------------------------------------------
- * 
- * function: read_port
- * 
- * brief: Read 8 bits from a port
- * 
- * return: Eight bits returned from the port
- * 
- *-----------------------------------------------------
- *
- * To make the byte I/O platform independent, this
- * function reads the bits in one-at-a-time and collates
- * them into a single byte for return
- * 
- *-----------------------------------------------------*/
-int port_list[] = {D7, D6, D5, D4, D3, D2, D1, D0};
-
-unsigned int read_port(void)
-{
-  int i;
-  int return_value = 0;
-
-/*
- *  Loop and read in all of the bits
- */
-  for (i=0; i != 8; i++)
-    {
-    return_value <<= 1;
-    return_value |= digitalRead(port_list[i]) & 1;
-    }
-
- /*
-  * Return the result 
-  */
-  return (return_value & 0x00ff);
-}
 
 /*-----------------------------------------------------
  * 
@@ -167,46 +119,16 @@ unsigned int read_port(void)
  * 
  * return: 16 bit counter register
  * 
- *-----------------------------------------------------
- *
- * Set the address bits and read in 16 bits
- * 
  *-----------------------------------------------------*/
 
-int direction_register[] = {NORTH_HI, NORTH_LO, EAST_HI, EAST_LO, SOUTH_HI, SOUTH_LO, WEST_HI, WEST_LO};
 
 unsigned int read_counter
   (
   unsigned int direction         // What direction are we reading?
   )
 {
-  int i;
-  unsigned int return_value_LO, return_value_HI;     // 16 bit port value
-  
-/*
- *  Reset all of the address bits
- */
-  for (i=0; i != 8; i++)
-    {
-    digitalWrite(direction_register[i], 1);
-    }
-  digitalWrite(RCLK,  1);   // Prepare to read
-  
-/*
- *  Set the direction line to low
- */
-  digitalWrite(direction_register[direction * 2 + 0], 0);
-  return_value_HI = read_port();
-  digitalWrite(direction_register[direction * 2 + 0], 1);
-  
-  digitalWrite(direction_register[direction * 2 + 1], 0);
-  return_value_LO = read_port();
-  digitalWrite(direction_register[direction * 2 + 1], 1);
-
-/*
- *  All done, return
- */
-  return (return_value_HI << 8) + return_value_LO;
+  // return timer value
+  return T[direction];
 }
 
 /*-----------------------------------------------------
@@ -217,18 +139,13 @@ unsigned int read_counter
  * 
  * return: TRUE if any of the counters are running
  * 
- *-----------------------------------------------------
- *
- * Read in the running registers, and return a 1 for every
- * register that is running.
- * 
  *-----------------------------------------------------*/
 
 unsigned int is_running (void)
 {
   unsigned int i;
   
-  i = (RUN_PORT & RUN_A_MASK)  >> RUN_LSB;
+  i = (TCCR1B & 1) +  ((TCCR3B & 1) << 1) + ((TCCR4B & 1) << 2) + ((TCCR5B & 1) <<3);
 
  /*
   *  Return the running mask
@@ -257,22 +174,25 @@ unsigned int is_running (void)
  *-----------------------------------------------------*/
 void arm_timers(void)
 {
-  digitalWrite(CLOCK_START, 0);   // Make sure Clock start is OFF
-  digitalWrite(STOP_N, 0);        // Reset the flip flop to stop the timers
-  digitalWrite(RCLK,   0);        // Set READ CLOCK to LOW
-  digitalWrite(QUIET,  1);        // Arm the counter
-  digitalWrite(CLR_N,  0);        // Reset the counters 
-  digitalWrite(CLR_N,  1);        // Remove the counter reset 
-  digitalWrite(STOP_N, 1);        // Let the counters run
-  
+  // offset due to delayed start
+  TCNT1 = 0;
+  TCNT3 = 2;
+  TCNT4 = 4;
+  TCNT5 = 6;
+
+  // TCCRxB: 7 - noise canceling, 6 - edge (0 falling), 5, 4, 3, 2:0 - prescaler (1 system clock)
+  // 16 MHz clock, 62.5 ns/count
+  TCCR1B = B10000001;  // Internal Clock, Prescaler = 1, ICU Filter DE, ICU Pin falling
+  TCCR3B = B10000001;
+  TCCR4B = B10000001;
+  TCCR5B = B10000001;
+
+  T_first = 0;  
   return;
 }
 
 void clear_running(void)          // Reset the RUN flip Flop
 {
-  digitalWrite(STOP_N, 0);        // Reset RUN outputs on the Flip Flop
-  digitalWrite(STOP_N, 1);        // Set the RUN outputs to active
-
   return;
 }
 
@@ -281,8 +201,10 @@ void clear_running(void)          // Reset the RUN flip Flop
  */
 void stop_timers(void)
 {
-  digitalWrite(STOP_N,0);   // Stop the counters
-  digitalWrite(QUIET, 0);   // Kill the oscillator 
+  TCCR1B = B00000000;  
+  TCCR3B = B00000000;
+  TCCR4B = B00000000;
+  TCCR5B = B00000000;
   return;
 }
 
@@ -291,10 +213,7 @@ void stop_timers(void)
  */
 void trip_timers(void)
 {
-  digitalWrite(CLOCK_START, 0);
-  digitalWrite(CLOCK_START, 1);     // Trigger the clocks from the D input of the FF
-  digitalWrite(CLOCK_START, 0);
-
+  // ToDo might have to add some code here :-)
   return;
 }
 
@@ -455,10 +374,6 @@ bool read_in(unsigned int port)
  * 
  * return:  All four timer registers read and stored
  * 
- *-----------------------------------------------------
- *
- * Force read each of the timers
- * 
  *-----------------------------------------------------*/
 void read_timers
   (
@@ -467,9 +382,25 @@ void read_timers
 {
   unsigned int i;
 
-  for (i=N; i<=W; i++)
+  // consider that the timer could overrun in between
+  // the original design stops the timer with the shot
+  // therefore the shotes time needs to be the longest
+  uint16_t StartTime = T[T_first-1];
+  uint16_t T_correct;
+  uint16_t T_diff;
+  for (i=0; i<=3; i++)
   {
-    *(timer_ptr + i) = read_counter(i);
+    if (T[i] >= StartTime)
+    {
+        T_diff = 65535-T[i];
+        T_correct = T_diff + StartTime;
+    }
+    else
+    {
+        T_correct = StartTime - T[i] + 1;
+    }
+
+    *(timer_ptr + i) = T_correct;
   }
 
   return;
@@ -732,10 +663,6 @@ void blink_fault
     return;                             // Carry On
   }
 
-  if ( CALIBRATE )                      // Calibration jumper in?
-  {
-    set_trip_point(0);
-  }
 
   if ( DIP_SW_A && DIP_SW_B )           // Both switches closed?
   {
@@ -1313,8 +1240,6 @@ void digital_test(void)
   Serial.print(T("\r\nTime:"));                      Serial.print(micros()/1000000); Serial.print("."); Serial.print(micros()%1000000); Serial.print(T("s"));
   Serial.print(T("\r\nBD Rev:"));                    Serial.print(revision());       
   Serial.print(T("\r\nDIP: 0x"));                    Serial.print(read_DIP(0), HEX); 
-  digitalWrite(STOP_N, 0);
-  digitalWrite(STOP_N, 1);                        // Reset the fun flip flop
   Serial.print(T("\r\nRUN FlipFlop: 0x"));           Serial.print(is_running(), HEX);   
   Serial.print(T("\r\nTemperature: "));              Serial.print(temperature_C());  Serial.print(T("'C "));
   Serial.print(speed_of_sound(temperature_C(), json_rh));  Serial.print(T("mm/us"));
@@ -1382,7 +1307,7 @@ void aquire(void)
   this_shot = (this_shot+1) % SHOT_STRING;          // Prepare for the next shot
 
 /*
- * MAll done for now
+ * All done for now
  */
   return;
 }

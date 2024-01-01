@@ -19,7 +19,6 @@ unsigned int revision(void);            // Return the board revision
 void set_LED_PWM(int percent);          // Ramp the PWM duty cycle
 void set_LED_PWM_now(int percent);      // Set the PWM duty cycle
 void set_vset_PWM(unsigned int value); // Value to write to PWM
-void compute_vset_PWM(double value);   // Reference voltage control loop
 
 /*
  *  Port Definitions

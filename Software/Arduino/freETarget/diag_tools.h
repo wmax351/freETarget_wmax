@@ -75,7 +75,6 @@ void POST_version(void);        // Show the version string
 void POST_LEDs(void);           // Verify the LED operation
 bool POST_counters(void);       // Verify the counter operation
 void POST_trip_point(void);     // Display the set point
-void set_trip_point(int v);     // Calibrate the trip point
 bool do_dlt(unsigned int level);// Diagnostics Log and Trace
 
 #endif
