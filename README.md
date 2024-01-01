@@ -1,5 +1,7 @@
 # freETarget
 
+This is a fork from the orginal version. The aim is to use the internal timers of the ATMage2560 to measure the hits, therefore reducing the parts needed to widely available PCBs.
+
 **What is freETarget?**
 
 freETarget is an 'electronic target' (or E-Target) for small calibre (air) rifles and pistols. It uses microphones arranged around the target card to detect the impact of the bullet on the paper and then calculates the point of impact using triangulation. The basic principles are detailed in 
