@@ -57,9 +57,9 @@ void init_timer(void)
   TCCR2B = 0;                           // same for TCCR0B
   TCNT2  = 0;                           // initialize counter value to 0
 
-  OCR2A = 16000000 / 64 / FREQUENCY;    // 16MHz CPU Clock / 64 Prescale / 1KHz timer interrupt
-  TCCR2A |= B00000010;                  // Enable CTC Mode
-  TCCR2B |= B00000011;                  // Prescale 64
+  OCR2A = 250; //16000000 / 64 / FREQUENCY;    // 16MHz CPU Clock / 64 Prescale / 1KHz timer interrupt
+  TCCR2A |= (1 << WGM01);               // Enable CTC Mode
+  TCCR2B |= (1 << CS01) | (1 << CS00);  // Prescale 64
   TIMSK2 &= ~(B0000010);                // Make sure the interrupt is disabled
 
   for (i=0; i != N_TIMERS; i++ )        // Clear the timer callback
@@ -68,6 +68,18 @@ void init_timer(void)
   }
 
   timer_new(&isr_timer, 0);             // Setup two local timers
+
+  // Init TCCRxA
+  TCCR1A = 0;
+  TCCR3A = 0;
+  TCCR4A = 0;
+  TCCR5A = 0;
+
+  // Init TIMSKx: 7, 6, 5 - ICU, 4, 3, 2, 1, 0 - OVF
+  TIMSK1 = B00100000;  // Enable Timer OVF & CAPT Interrupts
+  TIMSK3 = B00100000;
+  TIMSK4 = B00100000;
+  TIMSK5 = B00100000;
 
 /*
  * All done, return
@@ -124,10 +136,6 @@ ISR(TIMER1_CAPT_vect) {
   TCCR1B = B00000000;
   // transfer time into capture register
   T[0] = ICR1;
-  if (!T_first)
-  {
-    T_first = 1;
-  }
 }
 
 ISR(TIMER3_CAPT_vect) {
@@ -135,11 +143,6 @@ ISR(TIMER3_CAPT_vect) {
   TCCR3B = B00000000;
   // transfer time into capture register
   T[1] = ICR3;
-  if (!T_first)
-  {
-    T_first = 2;
-  }
-
 }
 
 ISR(TIMER4_CAPT_vect) {
@@ -147,10 +150,6 @@ ISR(TIMER4_CAPT_vect) {
   TCCR4B = B00000000;
   // transfer time into capture register
   T[2] = ICR4;
-  if (!T_first)
-  {
-    T_first = 3;
-  }
 }
 
 ISR(TIMER5_CAPT_vect) {
@@ -158,10 +157,6 @@ ISR(TIMER5_CAPT_vect) {
   TCCR5B = B00000000;
   // transfer time into capture register
   T[3] = ICR5;
-  if (!T_first)
-  {
-    T_first = 4;
-  }
 }
 
 /*-----------------------------------------------------

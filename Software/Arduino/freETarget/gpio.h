@@ -87,7 +87,7 @@ void json_spool_put(char ch);                             // Put something into 
 #define RTS_U        6
 #define LED_PWM      5          // PWM Port
 #define LED_RDY      4
-#define LED_X        3
+#define LED_X        22         //ToDo add in description, was 3
 #define LED_Y        2
 #define LON          1          // Turn the LED on
 #define LOF          0          // Turn the LED off

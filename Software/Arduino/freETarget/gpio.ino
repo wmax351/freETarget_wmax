@@ -56,8 +56,7 @@ static char aux_spool[128];               // Spooling buffer from the AUX port
 static char json_spool[64];               // Spool for JSON
 static unsigned int  aux_spool_in, aux_spool_out; // Pointer to the spool
 static unsigned int  json_spool_in, json_spool_out; // Pointer to the spool
-static uint16_t T[4];                     // safes the time values
-static uint8_t T_first;                    // stored the first timer to trigger
+static uint16_t T[4];                     // saves the time values
 
 
 /*-----------------------------------------------------
@@ -186,8 +185,7 @@ void arm_timers(void)
   TCCR3B = B10000001;
   TCCR4B = B10000001;
   TCCR5B = B10000001;
-
-  T_first = 0;  
+ 
   return;
 }
 
@@ -370,7 +368,9 @@ bool read_in(unsigned int port)
  * 
  * function: read_timers
  * 
- * brief:   Read the timer registers
+ * brief:   Read the timer registers, compensating fo
+ *          timer overrun
+ *          fixing the first time to 20000
  * 
  * return:  All four timer registers read and stored
  * 
@@ -382,24 +382,37 @@ void read_timers
 {
   unsigned int i;
 
-  // consider that the timer could overrun in between
-  // the original design stops the timer with the shot
-  // therefore the shotes time needs to be the longest
-  uint16_t StartTime = T[T_first-1];
-  uint16_t T_correct;
-  uint16_t T_diff;
-  for (i=0; i<=3; i++)
+  long T_correct;
+  long T_diff;
+
+  Serial.println();
+  
+  *(timer_ptr + 0) = 20000;
+  
+  for (i=1; i<=3; i++)
   {
-    if (T[i] >= StartTime)
+    Serial.print(i);
+    Serial.print(": ");
+    Serial.print((long)T[i]);
+    T_diff = (long)T[i]-long(T[0]);
+    if (T_diff > 10000)
     {
-        T_diff = 65535-T[i];
-        T_correct = T_diff + StartTime;
+        T_correct = T_diff - 45536;
+    }
+    else if (T_diff < - 10000)
+    {
+        T_correct = T_diff + 85536;
     }
     else
     {
-        T_correct = StartTime - T[i] + 1;
+        T_correct = T_diff + 20000;
     }
 
+
+    
+    Serial.print("-");
+    Serial.println(T_correct);
+  
     *(timer_ptr + i) = T_correct;
   }
 
