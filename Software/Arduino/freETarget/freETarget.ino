@@ -83,7 +83,7 @@ void setup(void)
   set_LED('*', '.', '.');                 // Hello World
   read_nonvol();
   
-  is_trace = 255; // DLT_CRITICAL;                // Turn on tracing ToDo change back
+  is_trace = 0; // DLT_CRITICAL;                // Turn on tracing ToDo change back
 
 /*
  *  Set up the port pins

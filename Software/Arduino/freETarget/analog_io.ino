@@ -187,6 +187,8 @@ double temperature_C(void)
  *  Return the temperature in C
  */
   return_value =  (double)(raw) * RTD_SCALE ;
+
+if (return_value < 5) return_value = 22;
   
 #if (SAMPLE_CALCULATIONS )
   return_value = 23.0;

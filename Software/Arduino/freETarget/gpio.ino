@@ -15,10 +15,10 @@ const GPIO init_table[] = {
   {DIP_2,       "\"DIP_2\":",    INPUT_PULLUP, 0},
   {DIP_3,       "\"DIP_3\":",    INPUT_PULLUP, 0},
 
-  {PD4,         "\"ICP_1\":",    INPUT_PULLUP, 0 }, // connected to PD7, PD6, PD5
-  {PE7,         "\"ICP_3\":",    INPUT_PULLUP, 0 }, // conencted to PE6, PE5
-  {PL0,         "\"ICP_4\":",    INPUT_PULLUP, 0 },
-  {PL1,         "\"ICP_5\":",    INPUT_PULLUP, 0 },
+  {PD4,         "\"ICP_1\":",    INPUT_PULLUP, 0 }, // N 38 connected to PD7, PD6, PD5
+  {PE7,         "\"ICP_3\":",    INPUT_PULLUP, 0 }, // E 3 conencted to PE6, PE5
+  {PL0,         "\"ICP_4\":",    INPUT_PULLUP, 0 }, // S 49
+  {PL1,         "\"ICP_5\":",    INPUT_PULLUP, 0 }, // W 48
 
   {PD7,         "\"ICP_1_\":",    INPUT, 0 }, // set parallel pins to high z
   {PD6,         "\"ICP_1_\":",    INPUT, 0 },
@@ -173,6 +173,24 @@ unsigned int is_running (void)
  *-----------------------------------------------------*/
 void arm_timers(void)
 {
+  // Init TCCRxA
+  TCCR1A = 0;
+  TCCR3A = 0;
+  TCCR4A = 0;
+  TCCR5A = 0;
+
+  //clear interrrupts
+  TIFR1 |= (1 << ICF1);
+  TIFR3 |= (1 << ICF3);
+  TIFR4 |= (1 << ICF4);
+  TIFR5 |= (1 << ICF5);
+
+  // Init TIMSKx: 7, 6, 5 - ICU, 4, 3, 2, 1, 0 - OVF
+  TIMSK1 = B00100000;  // Enable Timer OVF & CAPT Interrupts
+  TIMSK3 = B00100000;
+  TIMSK4 = B00100000;
+  TIMSK5 = B00100000;
+
   // offset due to delayed start
   TCNT1 = 0;
   TCNT3 = 2;
@@ -211,7 +229,7 @@ void stop_timers(void)
  */
 void trip_timers(void)
 {
-  // ToDo might have to add some code here :-)
+  // not needed any longer
   return;
 }
 
@@ -384,17 +402,13 @@ void read_timers
 
   long T_correct;
   long T_diff;
-
-  Serial.println();
   
   *(timer_ptr + 0) = 20000;
   
   for (i=1; i<=3; i++)
   {
-    Serial.print(i);
-    Serial.print(": ");
-    Serial.print((long)T[i]);
-    T_diff = (long)T[i]-long(T[0]);
+  
+    T_diff = (long)T[0]-long(T[i]);
     if (T_diff > 10000)
     {
         T_correct = T_diff - 45536;
@@ -410,8 +424,8 @@ void read_timers
 
 
     
-    Serial.print("-");
-    Serial.println(T_correct);
+    // Serial.print("-");
+    // Serial.println(T_correct);
   
     *(timer_ptr + i) = T_correct;
   }

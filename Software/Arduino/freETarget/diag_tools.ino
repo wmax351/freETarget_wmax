@@ -146,7 +146,7 @@ void self_test(uint16_t test)
       {
         continue;
       }
-      sensor_status = is_running();       // Remember all of the running timers ToDo: IsRunning might be wrong in all the functions
+      sensor_status = is_running();       // Remember all of the running timers
       stop_timers();
       read_timers(&shot.timer_count[0]);
 

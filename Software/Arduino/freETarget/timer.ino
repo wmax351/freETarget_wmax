@@ -25,6 +25,7 @@
 static unsigned long* timersensor[N_TIMERS]; // Active timer list
 static unsigned long isr_timer;         // Elapsed time counter
 static unsigned int isr_state = PORT_STATE_IDLE;// Current aquisition state
+static bool timer2_divider = false;
 
 
 /*-----------------------------------------------------
@@ -132,6 +133,8 @@ void disable_timer_interrupt(void)
  * 
  *-----------------------------------------------------*/
 ISR(TIMER1_CAPT_vect) {
+  //Disable Interrupts
+  TIMSK1 = B00000000;
   // stopt timer
   TCCR1B = B00000000;
   // transfer time into capture register
@@ -139,6 +142,8 @@ ISR(TIMER1_CAPT_vect) {
 }
 
 ISR(TIMER3_CAPT_vect) {
+  //Disable Interrupts
+  TIMSK3 = B00000000;
   // stopt timer
   TCCR3B = B00000000;
   // transfer time into capture register
@@ -146,6 +151,8 @@ ISR(TIMER3_CAPT_vect) {
 }
 
 ISR(TIMER4_CAPT_vect) {
+  //Disable Interrupts
+  TIMSK4 = B00000000;
   // stopt timer
   TCCR4B = B00000000;
   // transfer time into capture register
@@ -153,6 +160,8 @@ ISR(TIMER4_CAPT_vect) {
 }
 
 ISR(TIMER5_CAPT_vect) {
+  //Disable Interrupts
+  TIMSK5 = B00000000;
   // stopt timer
   TCCR5B = B00000000;
   // transfer time into capture register
@@ -198,6 +207,12 @@ ISR(TIMER2_COMPA_vect)
   
   TCNT2  = 0;                                   // Reset the counter back to 0
 
+// trigger only every 2nd time to get 1 kHZ
+if (timer2_divider) {
+  timer2_divider = false;
+  return;
+}
+timer2_divider = true;
 /*
  * Refresh the timers
  */
@@ -214,7 +229,7 @@ ISR(TIMER2_COMPA_vect)
  * Decide what to do if based on what inputs are present
  */ 
   pin = is_running();                 // Read in the RUN bits
-  //ToDo
+  
 /*
  * Read the timer hardware based on the ISR state
  */
