@@ -1,50 +1,28 @@
-# freETarget
+# freETarget minimalistic
 
-This is a fork from the orginal version. The aim is to use the internal timers of the ATMage2560 to measure the hits, therefore reducing the parts needed to widely available PCBs.
+This is a fork from the original version. The aim is to build a version based on widely available parts only, with electronics cost of less than 30 USD.
 
-**What is freETarget?**
+## What is frETagret minimalistic ##
 
-freETarget is an 'electronic target' (or E-Target) for small calibre (air) rifles and pistols. It uses microphones arranged around the target card to detect the impact of the bullet on the paper and then calculates the point of impact using triangulation. The basic principles are detailed in 
+This version requires only the following electronics parts which you can source directly from you provider of choice:
 
-It does this using relatively inexpensive electronics, based around the Arduino open-source ecosystem. This means you can have your own E-Target for a lot less than the current commercial offerings. How much exactly depends mostly on you own skill and effort. You can source and build everything yourself including the electronics and have a system running for around $200. If you want to have the electronics ready made, this price will be around $300.
+**1x Arduino mega 2560**
+**4x KY-037 microphone units**
 
-And yes, we realize this isn't exactly 'free', but it's still pretty cheap for such a system.
+This is possible due to a software change, which takes full advantage of the ATmega2560 capabilities. In the original version, shot timing is achieved using external timing infrastructure. The ATmega2560 has 6 timers, with 4 of them offering an Input Capture Unit (ICU). Using this mode, the timer values are immediately stored when a pin changes and an interrupt is fired, so there is no software jitter. One of the hurdles to overcome is in the design of the Arduino mega board, which does not connect all the ICU pins to the headers. This was overcome by bridging the respective to pins to adjacent fee ones with a fine-tipped soldering iron:
 
-Check out the BOM for the electronics to get a feel for the costs of that part. The enclosure can be as expensive as you want, in it's cheapest form it can be made of sturdy cardboard!
+**Bridge PD4, PD5, PD6 and PD7**
+**Bridge PE4, PE5, PE6**
 
-The second part of the solution is actually free and consists of the excellent frETarget software. This software offers incredible functionality and is maintained free of charge! See something you want changed, it's open-source, feel free to improve (and please share back).
+Once done, connect the digital outputs of the microphone boards as follows:
 
-**How do I work with the firmware?**
+**North: pin 38, East: pin 3, South: pin 49, West: pin 48**
+**Vcc and GND to the respective Arduino pins**
 
-The firmware is written for an Arduino and the Arduino IDE.  This makes it pretty accessible for anybody in the world.  Lots of aftermarket support
+For the mics to trigger all at the same level, set the pot voltage to a value of your finding (e.g. 0.380 V in my case).
 
-The software starts with freETarget.ino.  This is the startup and main control loop.  The other files, gpio.ino are helper files to interface to various hardware elements.  The heavy lifting is done buy the file compute_hit.ino.  
+Please refer to the original software for full building instructions.
 
+A word to accuracy and precision of this version. I have not fully specified these parameters. While the timers work without a jitter (this vas verified and confirmed), there might be a diminished performance based on the selected microphone boards and the omission of the temperature sensor.
 
-**I just want to build and upload the latest firmware**
-
-You can always download the latest firmware from https://www.free-e-target.com/downloads and upload the HEX file through the freETarget PC software. 
-
-If you want to build from source, just open the freETarget.ino file located in the freETarget subfolder in the Arduino IDE. You won't see any code, but hitting Verify and upload will work just the same.
-
-**I want to work on the PC source code**
-
-Great! The PC software is wrtten in C# using Visual Studio.  You can download a free version from the Microsoft web site.  
-
-
-**How do I work with the hardware?**
-
-The hardware is maintained in the electronics subfolder of the GIT repository and is developed in KiCad. Download and install KiCad EDA to work on the schematics and PCB's.
-
-
-**Tell me more**
-
-The documentation folder contains all of the documents that have been created for this project.
-
-   **Theory of Operation** details the algorithm and hardware used to detect the shot location
-
-   **Building freETarget** is the instructions for assembling a target
-
-   **Mechanical Folder** contains all of the mechanical drawings to complete your system
-   
-
+You'll find this fork at https://github.com/stoeckli/freETarget
