@@ -12,7 +12,8 @@ This version requires only the following electronics parts which you can source 
 This is possible due to a software change, which takes full advantage of the ATmega2560 capabilities. In the original version, shot timing is achieved using external timing infrastructure. The ATmega2560 has 6 timers, with 4 of them offering an Input Capture Unit (ICU). Using this mode, the timer values are immediately stored when a pin changes and an interrupt is fired, so there is no software jitter. One of the hurdles to overcome is in the design of the Arduino mega board, which does not connect all the ICU pins to the headers. This was overcome by bridging the respective to pins to adjacent fee ones with a fine-tipped soldering iron:
 
 **Bridge PD4, PD5, PD6 and PD7**
-**Bridge PE4, PE5, PE6**
+
+**Bridge PE5, PE6, PE7**
 
 Once done, connect the digital outputs of the microphone boards as follows:
 
