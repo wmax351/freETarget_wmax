@@ -18,16 +18,17 @@ double temperature_C(void);             // Temperature in degrees C
 unsigned int revision(void);            // Return the board revision
 void set_LED_PWM(int percent);          // Ramp the PWM duty cycle
 void set_LED_PWM_now(int percent);      // Set the PWM duty cycle
-void set_vset_PWM(unsigned int value); // Value to write to PWM
+void set_vset_PWM(unsigned int value);  // Value to write to PWM
 
 /*
  *  Port Definitions
  */
 
-#define NORTH_ANA    1          // North Analog Input
+#define NORTH_ANA    6          // North Analog Input
 #define EAST_ANA     2          // East Analog Input
 #define SOUTH_ANA    3          // South Analog Input
 #define WEST_ANA     4          // West Analog Input
+#define LM335_ANA    1         // LM335 Analog Input
 
 #define V_REFERENCE  0          // Reference Input
 #define V_12_LED     8          // 12 Volt LED input
